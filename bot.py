@@ -4,6 +4,7 @@ import threading
 import time
 import asyncio
 from datetime import datetime
+from flask import Flask, request
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -15,6 +16,7 @@ from telegram.ext import (
     ContextTypes,
 )
 
+# -------------------- Load Environment Variables --------------------
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -35,6 +37,7 @@ if not BOT_TOKEN:
 if not PRIVATE_CHANNEL_ID:
     raise RuntimeError("PRIVATE_CHANNEL_ID is required")
 
+# -------------------- Database Setup --------------------
 DB_PATH = "subscriptions.db"
 db_lock = threading.Lock()
 
@@ -87,10 +90,16 @@ def get_subscription_expiry(user_id):
 
 init_db()
 
+# -------------------- Flask App --------------------
+app = Flask(__name__)
+
+# -------------------- Bot Setup --------------------
+application = Application.builder().token(BOT_TOKEN).build()
+
 TELEBIRR_ACCOUNT = "0987973732"
-PRICE_1 = 1200
-PRICE_2 = 2400
-PRICE_3 = 3300
+PRICE_1 = 700
+PRICE_2 = 1400
+PRICE_3 = 2000
 
 def format_expiry(timestamp):
     if not timestamp:
@@ -106,27 +115,47 @@ def plan_keyboard():
     ]
     return InlineKeyboardMarkup(keyboard)
 
-application = Application.builder().token(BOT_TOKEN).build()
-
+# -------------------- Telegram Bot Handlers --------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
+    """Welcome message with channel benefits and a 'Proceed' button."""
     welcome_text = (
-        f"👋 *Welcome to Our VVIP Habesha Premium Private Channel* 🔥💋\n\n"
-        f"🇺🇸 *English:*\n"
-        f"Welcome to our VVIP Habesha 🔥 Premium sex Private Channel 😈💎\n"
-        f"To unlock exclusive hot content and enjoy full access, please select your membership plan below and complete your payment on Telebirr.\n"
-        f"💳 Choose your membership.\n"
-        f"✅ Make payment.\n"
-        f"🔓 Get instant access now.\n"
-        f"Don’t miss the exclusive vibes waiting for you… 💋🔥\n\n"
-        f"🇪🇹 *አማርኛ:*\n"
-        f"ወደ VVIP Habesha 🔥 ፕሪሚየም ወሲብ ፕራይቬት ቻናላችን 😈💎 እንኳን በደህና መጡ!\n"
-        f"ሙሉ እና ልዩ የሆነ የሀበሻ ወሲብ ኮንቴንት 🔥💋 ለማግኘት ከታች ያለውን የአባልነት አማራጭ ይምረጡ እና ክፍያዎን በ ቴሌብር ይፈጽሙ።\n"
-        f"💳 አባልነትዎን ይምረጡ\n"
-        f"✅ ክፍያ ይፈጽሙ\n"
-        f"🔓 ወዲያውኑ መግቢያ ያግኙ"
+        "👋🔥 Welcome to Habesha Wesib Official Premium Channel! 🔥💋\n\n"
+        "Get ready for an exclusive adult entertainment experience designed just for you 😍✨ We proudly deliver premium content every single day for our valued members 💎📅\n\n"
+        "✨💎 What You’ll Enjoy:\n"
+        "• 🔥 Exclusive hot videos and photos 📸🎥\n"
+        "• 📅 Daily premium updates\n"
+        "• 🎥🔴 Live streaming sessions every night 🌙🔥\n"
+        "• 💃🏾 Sexy live performances & private shows 😍\n"
+        "• 💬 Direct interaction with our private community\n"
+        "• 🕒 24/7 support\n\n"
+        "Join our 🔴 LIVE sessions every night 🌙 to watch the most beautiful Habesha girls 💃🏾🔥, interact with them directly in the chat 💬❤️, and enjoy an unforgettable premium experience 😍✨\n\n"
+        "Don’t just watch 👀 — be an active participant 💬🔥 and elevate your experience to the next level 🚀💎\n\n"
+        "👇👇 Press the button below to choose your membership plan and proceed 💳✅\n\n"
+        "🔥🇪🇹 እንኳን ወደ ሐበሻ ወሲብ ኦፊሻል ፕሪሚየም ቻናል በደህና መጡ! 🔥💋\n\n"
+        "ለእርስዎ ብቻ የተዘጋጀ ልዩ የወሲብ መዝናኛ ተሞክሮ ይጠብቃችኋል 😍✨ በየቀኑ ፕሪሚየም ኮንቴንት እናቀርባለን 📅💎\n\n"
+        "✨💎 የምታገኙት:\n"
+        "• 🔥 ልዩ ሙቅ ቪዲዮዎች እና ፎቶዎች 📸🎥\n"
+        "• 📅 ዕለታዊ አዲስ ፕሪሚየም ኮንቴንት\n"
+        "• 🔴 በየምሽቱ ቀጥታ (Live) ስርጭት 🌙🎥\n"
+        "• 💃🏾 ሴክሲ የቀጥታ ትዕይንቶች 😍🔥\n"
+        "• 💬 በፕራይቬት ቻናላችን ውስጥ ቀጥተኛ መሳተፍ\n"
+        "• 🕒 24/7 ድጋፍ\n\n"
+        "በLive 🔴 ተገኝታችሁ ቆንጆ የሀበሻ ሴቶችን 💃🏾🔥 ይመልከቱ፣ በቻት 💬 ቀጥታ ይነጋገሩ እና ልዩ ተሞክሮ ይደሰቱ 😍✨\n\n"
+        "ብቻ ተመልካች አትሁኑ 👀 — ንቁ ተሳታፊ በመሆን ይደሰቱ 💬🔥\n\n"
+        "👇👇 የአባልነት ፕላንዎን ለመምረጥ ከታች ያለውን ቁልፍ ይጫኑ"
     )
-    await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=plan_keyboard())
+    keyboard = [[InlineKeyboardButton("✅ Proceed to Membership", callback_data="proceed")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=reply_markup)
+
+async def proceed_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show the plan selection keyboard."""
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(
+        "Please select your membership plan:",
+        reply_markup=plan_keyboard()
+    )
 
 async def plan_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -162,7 +191,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "🇺🇸 Please first choose a subscription plan using /start.\n"
             "🇪🇹 እባክዎ መጀመሪያ የደንበኝነት ምርጫዎን ይምረጡ።",
-            reply_markup=plan_keyboard()
+            reply_markup=proceed_keyboard()
         )
         return
 
@@ -253,7 +282,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (
         "🤖 *Available Commands*\n\n"
         "👤 *For everyone:*\n"
-        "/start – Choose subscription plan\n"
+        "/start – Start the bot and see membership options\n"
         "/help – Show this message\n"
         "/status – Check your subscription status\n"
         "/renew – Request renewal (if expired)\n\n"
@@ -349,46 +378,55 @@ async def list_subscribers(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lines.append(f"{status} `{uid}` – expires {format_expiry(exp)}")
     await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
 
-def auto_cleanup():
-    while True:
-        time.sleep(86400)
-        now = int(time.time())
-        expired = get_expired_users(now)
-        if expired:
-            print(f"🧹 Cleaning up {len(expired)} expired users...")
-            for user_id in expired:
-                try:
-                    asyncio.run(application.bot.ban_chat_member(
-                        chat_id=PRIVATE_CHANNEL_ID,
-                        user_id=user_id
-                    ))
-                    remove_subscription(user_id)
-                    asyncio.run(application.bot.send_message(
-                        chat_id=user_id,
-                        text="Your subscription has expired. To renew, please send a new payment screenshot."
-                    ))
-                    print(f"✅ Removed expired user {user_id}")
-                except Exception as e:
-                    print(f"❌ Error cleaning up user {user_id}: {e}")
-        else:
-            print("🧹 No expired users found.")
+def proceed_keyboard():
+    keyboard = [[InlineKeyboardButton("✅ Proceed to Membership", callback_data="proceed")]]
+    return InlineKeyboardMarkup(keyboard)
 
-def main():
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("status", status_command))
-    application.add_handler(CommandHandler("renew", renew_request))
-    application.add_handler(CommandHandler("approve", approve_manual, filters=filters.User(user_id=ADMIN_IDS)))
-    application.add_handler(CommandHandler("list", list_subscribers, filters=filters.User(user_id=ADMIN_IDS)))
-    application.add_handler(CallbackQueryHandler(plan_callback, pattern="^plan:"))
-    application.add_handler(CallbackQueryHandler(handle_callback, pattern="^(approve|decline):"))
-    application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+# -------------------- Add Handlers to Application --------------------
+application.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("help", help_command))
+application.add_handler(CommandHandler("status", status_command))
+application.add_handler(CommandHandler("renew", renew_request))
+application.add_handler(CommandHandler("approve", approve_manual, filters=filters.User(user_id=ADMIN_IDS)))
+application.add_handler(CommandHandler("list", list_subscribers, filters=filters.User(user_id=ADMIN_IDS)))
+application.add_handler(CallbackQueryHandler(proceed_callback, pattern="^proceed$"))
+application.add_handler(CallbackQueryHandler(plan_callback, pattern="^plan:"))
+application.add_handler(CallbackQueryHandler(handle_callback, pattern="^(approve|decline):"))
+application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-    cleanup_thread = threading.Thread(target=auto_cleanup, daemon=True)
-    cleanup_thread.start()
+# Initialize the application (no updater)
+async def init_app():
+    await application.initialize()
+asyncio.run(init_app())
 
-    print("🤖 Bot started (polling mode)...")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+# -------------------- Flask Routes --------------------
+@app.route("/")
+def health():
+    return "Bot is running", 200
 
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    """Handle incoming Telegram updates."""
+    try:
+        data = request.get_json(force=True)
+        update = Update.de_json(data, application.bot)
+        asyncio.run(application.process_update(update))
+        return "OK", 200
+    except Exception as e:
+        print(f"Error in webhook: {e}")
+        return "OK", 200
+
+@app.route("/set_webhook")
+def set_webhook():
+    """Register the webhook URL with Telegram."""
+    import os
+    # Render provides the external URL via RENDER_EXTERNAL_URL environment variable
+    render_url = os.environ.get('RENDER_EXTERNAL_URL', 'your-app.onrender.com')
+    webhook_url = f"https://{render_url}/webhook"
+    asyncio.run(application.bot.set_webhook(url=webhook_url))
+    return f"Webhook set to {webhook_url}"
+
+# -------------------- Run Flask --------------------
 if __name__ == "__main__":
-    main()
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
