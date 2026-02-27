@@ -6,7 +6,7 @@ import asyncio
 from datetime import datetime
 from flask import Flask, request
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -94,6 +94,7 @@ init_db()
 app = Flask(__name__)
 
 # -------------------- Bot Setup --------------------
+# Build the application without any updater (polling is completely disabled)
 application = Application.builder().token(BOT_TOKEN).build()
 
 TELEBIRR_ACCOUNT = "0987973732"
@@ -113,6 +114,10 @@ def plan_keyboard():
         [InlineKeyboardButton(f"2 Months – {PRICE_2} Birr", callback_data="plan:2")],
         [InlineKeyboardButton(f"3 Months – {PRICE_3} Birr", callback_data="plan:3")],
     ]
+    return InlineKeyboardMarkup(keyboard)
+
+def proceed_keyboard():
+    keyboard = [[InlineKeyboardButton("✅ Proceed to Membership", callback_data="proceed")]]
     return InlineKeyboardMarkup(keyboard)
 
 # -------------------- Telegram Bot Handlers --------------------
@@ -144,12 +149,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "ብቻ ተመልካች አትሁኑ 👀 — ንቁ ተሳታፊ በመሆን ይደሰቱ 💬🔥\n\n"
         "👇👇 የአባልነት ፕላንዎን ለመምረጥ ከታች ያለውን ቁልፍ ይጫኑ"
     )
-    keyboard = [[InlineKeyboardButton("✅ Proceed to Membership", callback_data="proceed")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=reply_markup)
+    await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=proceed_keyboard())
 
 async def proceed_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Show the plan selection keyboard."""
     query = update.callback_query
     await query.answer()
     await query.edit_message_text(
@@ -166,12 +168,7 @@ async def plan_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     months = int(data[1])
     context.user_data['selected_months'] = months
 
-    if months == 1:
-        price = PRICE_1
-    elif months == 2:
-        price = PRICE_2
-    else:
-        price = PRICE_3
+    price = {1: PRICE_1, 2: PRICE_2, 3: PRICE_3}.get(months, PRICE_1)
 
     confirm_text = (
         f"✅ *You selected {months} month(s) – Total: {price} Birr*\n\n"
@@ -195,12 +192,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    if months == 1:
-        price = PRICE_1
-    elif months == 2:
-        price = PRICE_2
-    else:
-        price = PRICE_3
+    price = {1: PRICE_1, 2: PRICE_2, 3: PRICE_3}.get(months, PRICE_1)
 
     photo = update.message.photo[-1]
     caption = (
@@ -279,108 +271,113 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(f"❌ Declined user `{user_id}`.", parse_mode="Markdown")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Display available commands and usage."""
     help_text = (
-        "🤖 *Available Commands*\n\n"
-        "👤 *For everyone:*\n"
-        "/start – Start the bot and see membership options\n"
-        "/help – Show this message\n"
-        "/status – Check your subscription status\n"
-        "/renew – Request renewal (if expired)\n\n"
-        "👑 *For admins only:*\n"
-        "/approve <user_id> [months] – Manually approve (default 1 month)\n"
-        "/list – List all active subscribers"
+        "📌 *Available Commands*\n"
+        "/start - Begin interaction and choose membership plan\n"
+        "/status - Check your subscription expiry\n"
+        "/renew - Request a subscription renewal approval\n"
+        "/help - Show this help message\n"
+        "\n"
+        "🛠 *Admin Commands* (admins only)\n"
+        "/approve <user_id> <months> - Manually approve a user\n"
+        "/list - List all subscribers and expiry dates\n"
     )
     await update.message.reply_text(help_text, parse_mode="Markdown")
 
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send the user their current subscription status."""
     user_id = update.effective_user.id
     expiry = get_subscription_expiry(user_id)
-    if expiry and expiry > int(time.time()):
-        remaining = expiry - int(time.time())
-        days = remaining // 86400
-        hours = (remaining % 86400) // 3600
-        status_text = (
-            f"✅ *You are subscribed!*\n"
-            f"Expires: {format_expiry(expiry)}\n"
-            f"Time left: {days} days, {hours} hours"
+    now = int(time.time())
+    if not expiry or expiry <= now:
+        await update.message.reply_text(
+            "🇺🇸 You are not currently subscribed or your subscription has expired.\n"
+            "Use /start to choose a plan.\n"
+            "\n🇪🇹 የእርስዎ የደንበኝነት ጊዜ ያልተሠራ ነው ወይም የጨረሰ ነው።\n"
+            "/start ን በመጠቀም ፕላን ይምረጡ።",
+            parse_mode="Markdown"
         )
-    elif expiry:
-        status_text = "❌ *Your subscription has expired.* Use /renew to request renewal."
     else:
-        status_text = "❌ *You are not subscribed.* Send /start to choose a plan."
-    await update.message.reply_text(status_text, parse_mode="Markdown")
+        await update.message.reply_text(
+            f"✅ Your subscription expires on {format_expiry(expiry)}\n"
+            "Use /renew to request more time.",
+            parse_mode="Markdown"
+        )
 
 async def renew_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Forward a renewal request to admins."""
     user = update.effective_user
+    expiry = get_subscription_expiry(user.id)
+    expiry_text = format_expiry(expiry)
+    msg = (
+        f"🔔 Renewal request from [{user.first_name}](tg://user?id={user.id}) ``{user.id}``\n"
+        f"Current expiry: {expiry_text}\n"
+        "Use /approve <user_id> <months> to grant additional time."
+    )
     for admin_id in ADMIN_IDS:
         try:
-            await context.bot.send_message(
-                chat_id=admin_id,
-                text=f"🔄 *Renewal request* from [{user.first_name}](tg://user?id={user.id}) (ID: `{user.id}`)",
-                parse_mode="Markdown"
-            )
+            await context.bot.send_message(chat_id=admin_id, text=msg, parse_mode="Markdown")
         except Exception as e:
             print(f"Failed to notify admin {admin_id}: {e}")
     await update.message.reply_text(
-        "📩 Your renewal request has been sent to the admins.\n\n"
-        "📩 የእድሳት ጥያቄዎ ለአስተዳዳሪዎች ተልኳል።"
+        "✅ Your renewal request has been sent to the admins.\n"
+        "🔁 They will respond once a decision is made."
     )
 
 async def approve_manual(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("⛔ Unauthorized.")
+    """Admin command to manually approve a subscription."""
+    args = context.args
+    if len(args) != 2 or not args[0].isdigit() or not args[1].isdigit():
+        await update.message.reply_text(
+            "Usage: /approve <user_id> <months>\n" 
+            "Example: /approve 123456789 1"
+        )
         return
-    if len(context.args) < 1:
-        await update.message.reply_text("Usage: /approve <user_id> [months]")
-        return
-    try:
-        user_id = int(context.args[0])
-        months = int(context.args[1]) if len(context.args) > 1 else 1
-    except ValueError:
-        await update.message.reply_text("Invalid arguments.")
-        return
-
+    user_id = int(args[0])
+    months = int(args[1])
     add_subscription(user_id, months * 30)
     try:
         invite_link = await context.bot.create_chat_invite_link(
             chat_id=PRIVATE_CHANNEL_ID,
             member_limit=1,
-            expire_date=int(time.time()) + months * 30 * 86400
+            expire_date=int(time.time()) + months * 30 * 86400,
         )
         await context.bot.send_message(
             chat_id=user_id,
             text=(
-                f"🎉 An admin has manually approved your subscription for {months} months!\n\n"
-                f"Your invite link:\n{invite_link.invite_link}"
-            )
+                f"🎉 *Your subscription has been approved!*\n"
+                f"You have been granted access for {months} month(s).\n"
+                f"Here is your invite link:\n{invite_link.invite_link}"
+            ),
+            parse_mode="Markdown",
         )
-        await update.message.reply_text(f"✅ Approved user {user_id} for {months} months.")
+        await update.message.reply_text(f"✅ Approved {user_id} for {months} months. Invite link sent.")
     except Exception as e:
-        await update.message.reply_text(f"❌ Approval failed: {e}")
+        await update.message.reply_text(f"❌ Failed to send invite link: {e}")
 
 async def list_subscribers(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("⛔ Unauthorized.")
-        return
-    now = int(time.time())
+    """Admin command to show all subscribers and expiries."""
     with db_lock:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        c.execute("SELECT user_id, expiry_date FROM subscriptions ORDER BY expiry_date")
+        c.execute("SELECT user_id, expiry_date FROM subscriptions ORDER BY expiry_date DESC")
         rows = c.fetchall()
         conn.close()
     if not rows:
-        await update.message.reply_text("No active subscribers.")
+        await update.message.reply_text("No subscribers found.")
         return
-    lines = ["📋 *Active Subscribers:*\n"]
+    lines = []
+    now = int(time.time())
     for uid, exp in rows:
-        status = "✅" if exp > now else "❌"
-        lines.append(f"{status} `{uid}` – expires {format_expiry(exp)}")
-    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+        status = "(expired)" if exp <= now else ""
+        lines.append(f"`{uid}` – {format_expiry(exp)} {status}")
+    text = "\n".join(lines)
+    # Telegram limits message size; split if too long
+    for chunk in [text[i:i+3900] for i in range(0, len(text), 3900)]:
+        await update.message.reply_text(chunk, parse_mode="Markdown")
 
-def proceed_keyboard():
-    keyboard = [[InlineKeyboardButton("✅ Proceed to Membership", callback_data="proceed")]]
-    return InlineKeyboardMarkup(keyboard)
+# -------------------- Add Handlers to Application --------------------
 
 # -------------------- Add Handlers to Application --------------------
 application.add_handler(CommandHandler("start", start))
@@ -394,47 +391,30 @@ application.add_handler(CallbackQueryHandler(plan_callback, pattern="^plan:"))
 application.add_handler(CallbackQueryHandler(handle_callback, pattern="^(approve|decline):"))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-# Initialize and start the application (required for webhooks)
+# --- Initialize the application (no polling!) ---
 async def init_app():
     await application.initialize()
-    await application.start()   # <-- Added this line
+    # We do NOT call start() here. For pure webhook mode, initialize() is enough.
 asyncio.run(init_app())
 
 # -------------------- Flask Routes --------------------
 @app.route("/")
 def health():
-    return "Bot is running", 200
-
-@app.route("/test_send")
-def test_send():
-    """Test endpoint to send a message to the admin."""
-    try:
-        # Send a message to the first admin (you can change the ID)
-        admin_id = ADMIN_IDS[0] if ADMIN_IDS else 5993737811
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(application.bot.send_message(
-            chat_id=admin_id,
-            text="✅ Bot is working! This is a test message."
-        ))
-        loop.close()
-        return "Test message sent to admin."
-    except Exception as e:
-        return f"Error sending test message: {e}"
+    return "Bot is running (webhook mode)", 200
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
     """Handle incoming Telegram updates."""
-    print("✅ Webhook received!")   # Added for debugging
+    print("✅ Webhook endpoint hit.")
     try:
         data = request.get_json(force=True)
         update = Update.de_json(data, application.bot)
-        # Process update in a new event loop
+        # Process the update in a new event loop to avoid conflicts
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(application.process_update(update))
         loop.close()
-        print(f"✅ Update {update.update_id} processed successfully.")
+        print(f"✅ Update {update.update_id} processed.")
         return "OK", 200
     except Exception as e:
         print(f"❌ Error in webhook: {e}")
@@ -442,32 +422,24 @@ def webhook():
 
 @app.route("/set_webhook")
 def set_webhook():
-    """Register the webhook URL with Telegram using a temporary bot."""
+    """Register the webhook with Telegram."""
     try:
-        # Use Render's public URL if available, otherwise build from request and force HTTPS
-        public_url = os.environ.get('RENDER_EXTERNAL_URL')
-        if public_url:
-            base_url = public_url.rstrip('/')
-        else:
-            # Build from request host and ensure HTTPS
-            base_url = request.host_url.rstrip('/')
-            if base_url.startswith('http://'):
-                base_url = base_url.replace('http://', 'https://', 1)
-        webhook_url = f"{base_url}/webhook"
+        # Use Render's public URL
+        public_url = os.environ.get('RENDER_EXTERNAL_URL', request.host_url.rstrip('/'))
+        if public_url.startswith('http://'):
+            public_url = public_url.replace('http://', 'https://', 1)
+        webhook_url = f"{public_url}/webhook"
 
-        # Create a temporary bot with its own connection pool
+        # Use a temporary bot to avoid connection pool issues
         from telegram import Bot
         temp_bot = Bot(token=BOT_TOKEN)
-
-        # Run the async operation in a new event loop
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(temp_bot.set_webhook(url=webhook_url))
         loop.close()
-
         return f"✅ Webhook set to {webhook_url}"
     except Exception as e:
-        return f"❌ Error setting webhook: {e}", 500
+        return f"❌ Error: {e}", 500
 
 # -------------------- Run Flask --------------------
 if __name__ == "__main__":
