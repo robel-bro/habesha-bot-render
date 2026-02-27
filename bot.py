@@ -418,12 +418,21 @@ def webhook():
 
 @app.route("/set_webhook")
 def set_webhook():
-    """Register the webhook URL with Telegram using the request's host."""
+    """Register the webhook URL with Telegram using a temporary bot."""
     try:
-        # Build the webhook URL from the request's host (the public URL)
-        base_url = request.host_url.rstrip('/')  # e.g., https://habesha-bot-render.onrender.com
+        base_url = request.host_url.rstrip('/')
         webhook_url = f"{base_url}/webhook"
-        asyncio.run(application.bot.set_webhook(url=webhook_url))
+
+        # Create a temporary bot with its own connection pool
+        from telegram import Bot
+        temp_bot = Bot(token=BOT_TOKEN)
+
+        # Run the async operation in a new event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(temp_bot.set_webhook(url=webhook_url))
+        loop.close()
+
         return f"✅ Webhook set to {webhook_url}"
     except Exception as e:
         return f"❌ Error setting webhook: {e}", 500
