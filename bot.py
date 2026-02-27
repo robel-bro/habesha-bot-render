@@ -394,9 +394,10 @@ application.add_handler(CallbackQueryHandler(plan_callback, pattern="^plan:"))
 application.add_handler(CallbackQueryHandler(handle_callback, pattern="^(approve|decline):"))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-# Initialize the application (no updater)
+# Initialize and start the application (required for webhooks)
 async def init_app():
     await application.initialize()
+    await application.start()   # <-- Added this line
 asyncio.run(init_app())
 
 # -------------------- Flask Routes --------------------
@@ -404,16 +405,39 @@ asyncio.run(init_app())
 def health():
     return "Bot is running", 200
 
+@app.route("/test_send")
+def test_send():
+    """Test endpoint to send a message to the admin."""
+    try:
+        # Send a message to the first admin (you can change the ID)
+        admin_id = ADMIN_IDS[0] if ADMIN_IDS else 5993737811
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(application.bot.send_message(
+            chat_id=admin_id,
+            text="✅ Bot is working! This is a test message."
+        ))
+        loop.close()
+        return "Test message sent to admin."
+    except Exception as e:
+        return f"Error sending test message: {e}"
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     """Handle incoming Telegram updates."""
+    print("✅ Webhook received!")   # Added for debugging
     try:
         data = request.get_json(force=True)
         update = Update.de_json(data, application.bot)
-        asyncio.run(application.process_update(update))
+        # Process update in a new event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(application.process_update(update))
+        loop.close()
+        print(f"✅ Update {update.update_id} processed successfully.")
         return "OK", 200
     except Exception as e:
-        print(f"Error in webhook: {e}")
+        print(f"❌ Error in webhook: {e}")
         return "OK", 200
 
 @app.route("/set_webhook")
