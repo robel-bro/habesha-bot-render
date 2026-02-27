@@ -96,6 +96,7 @@ app = Flask(__name__)
 # -------------------- Bot Setup --------------------
 application = Application.builder().token(BOT_TOKEN).build()
 
+# -------------------- Premium Constants --------------------
 TELEBIRR_ACCOUNT = "0987973732"
 PRICE_1 = 700
 PRICE_2 = 1400
@@ -109,52 +110,59 @@ def format_expiry(timestamp):
 
 def plan_keyboard():
     keyboard = [
-        [InlineKeyboardButton(f"1 Month – {PRICE_1} Birr", callback_data="plan:1")],
-        [InlineKeyboardButton(f"2 Months – {PRICE_2} Birr", callback_data="plan:2")],
-        [InlineKeyboardButton(f"3 Months – {PRICE_3} Birr", callback_data="plan:3")],
+        [InlineKeyboardButton(f"💎 1 Month – {PRICE_1} Birr", callback_data="plan:1")],
+        [InlineKeyboardButton(f"✨ 2 Months – {PRICE_2} Birr", callback_data="plan:2")],
+        [InlineKeyboardButton(f"🔥 3 Months – {PRICE_3} Birr", callback_data="plan:3")],
     ]
     return InlineKeyboardMarkup(keyboard)
 
 def proceed_keyboard():
-    keyboard = [[InlineKeyboardButton("✅ Proceed to Membership", callback_data="proceed")]]
+    keyboard = [[InlineKeyboardButton("💳 Proceed to Membership", callback_data="proceed")]]
     return InlineKeyboardMarkup(keyboard)
 
-# -------------------- Telegram Bot Handlers --------------------
+# -------------------- Premium Welcome Message --------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Welcome message with channel benefits and a 'Proceed' button."""
     welcome_text = (
-        "👋🔥 Welcome to Habesha Wesib Official Premium Channel! 🔥💋\n\n"
-        "Get ready for an exclusive adult entertainment experience designed just for you 😍✨ We proudly deliver premium content every single day for our valued members 💎📅\n\n"
-        "✨💎 What You’ll Enjoy:\n"
-        "• 🔥 Exclusive hot videos and photos 📸🎥\n"
-        "• 📅 Daily premium updates\n"
-        "• 🎥🔴 Live streaming sessions every night 🌙🔥\n"
-        "• 💃🏾 Sexy live performances & private shows 😍\n"
-        "• 💬 Direct interaction with our private community\n"
-        "• 🕒 24/7 support\n\n"
-        "Join our 🔴 LIVE sessions every night 🌙 to watch the most beautiful Habesha girls 💃🏾🔥, interact with them directly in the chat 💬❤️, and enjoy an unforgettable premium experience 😍✨\n\n"
-        "Don’t just watch 👀 — be an active participant 💬🔥 and elevate your experience to the next level 🚀💎\n\n"
-        "👇👇 Press the button below to choose your membership plan and proceed 💳✅\n\n"
-        "🔥🇪🇹 እንኳን ወደ ሐበሻ ወሲብ ኦፊሻል ፕሪሚየም ቻናል በደህና መጡ! 🔥💋\n\n"
-        "ለእርስዎ ብቻ የተዘጋጀ ልዩ የወሲብ መዝናኛ ተሞክሮ ይጠብቃችኋል 😍✨ በየቀኑ ፕሪሚየም ኮንቴንት እናቀርባለን 📅💎\n\n"
-        "✨💎 የምታገኙት:\n"
-        "• 🔥 ልዩ ሙቅ ቪዲዮዎች እና ፎቶዎች 📸🎥\n"
+        "╔══════════════════════════════╗\n"
+        "     👑🔥 **VVIP HABESHA** 🔥👑     \n"
+        "╚══════════════════════════════╝\n\n"
+        "✨ *Welcome to the most exclusive Habesha premium channel!* ✨\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "🇺🇸 **What you'll enjoy:**\n"
+        "• 🔥 Exclusive hot videos & photos\n"
+        "• 📅 Daily premium content updates\n"
+        "• 🎥🔴 Live streaming every night\n"
+        "• 💃🏾 Sexy live performances\n"
+        "• 💬 Direct interaction with the community\n"
+        "• 🕒 24/7 VIP support\n\n"
+        "🇪🇹 **ምን ያገኛሉ:**\n"
+        "• 🔥 ልዩ ሙቅ ቪዲዮዎች እና ፎቶዎች\n"
         "• 📅 ዕለታዊ አዲስ ፕሪሚየም ኮንቴንት\n"
-        "• 🔴 በየምሽቱ ቀጥታ (Live) ስርጭት 🌙🎥\n"
-        "• 💃🏾 ሴክሲ የቀጥታ ትዕይንቶች 😍🔥\n"
-        "• 💬 በፕራይቬት ቻናላችን ውስጥ ቀጥተኛ መሳተፍ\n"
-        "• 🕒 24/7 ድጋፍ\n\n"
-        "በLive 🔴 ተገኝታችሁ ቆንጆ የሀበሻ ሴቶችን 💃🏾🔥 ይመልከቱ፣ በቻት 💬 ቀጥታ ይነጋገሩ እና ልዩ ተሞክሮ ይደሰቱ 😍✨\n\n"
-        "ብቻ ተመልካች አትሁኑ 👀 — ንቁ ተሳታፊ በመሆን ይደሰቱ 💬🔥\n\n"
-        "👇👇 የአባልነት ፕላንዎን ለመምረጥ ከታች ያለውን ቁልፍ ይጫኑ"
+        "• 🔴 በየምሽቱ ቀጥታ ስርጭት\n"
+        "• 💃🏾 ሴክሲ የቀጥታ ትዕይንቶች\n"
+        "• 💬 ቀጥተኛ ውይይት በፕራይቬት ቻናል\n"
+        "• 🕒 24/7 ድጋፍ\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "👇 *Choose your membership plan below* 👇"
     )
     await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=proceed_keyboard())
 
+# -------------------- Premium Proceed Callback --------------------
 async def proceed_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text("Please select your membership plan:", reply_markup=plan_keyboard())
+    text = (
+        "🌟 **Select your VIP plan** 🌟\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "💎 **1 Month** – Full access for 30 days\n"
+        "✨ **2 Months** – Save more with longer access\n"
+        "🔥 **3 Months** – Best value, ultimate experience\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Tap a button below to continue:"
+    )
+    await query.edit_message_text(text, parse_mode="Markdown", reply_markup=plan_keyboard())
 
+# -------------------- Premium Plan Selection --------------------
 async def plan_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -164,36 +172,47 @@ async def plan_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     months = int(data[1])
     context.user_data['selected_months'] = months
     price = {1: PRICE_1, 2: PRICE_2, 3: PRICE_3}[months]
-    confirm_text = (
-        f"✅ *You selected {months} month(s) – Total: {price} Birr*\n\n"
-        f"🇺🇸 Please send **{price} Birr** to the following Telebirr account:\n"
-        f"`{TELEBIRR_ACCOUNT}`\n\n"
-        f"After payment, **send a screenshot** of the transaction.\n\n"
-        f"🇪🇹 እባክዎ **{price} ብር** ወደዚህ ቴሌብር አካውንት ይላኩ።\n"
-        f"`{TELEBIRR_ACCOUNT}`\n\n"
-        f"ከክፍያ በኋላ የስክሪን ሾት ይላኩ።"
-    )
-    await query.edit_message_text(confirm_text, parse_mode="Markdown")
 
+    text = (
+        f"✅ **You selected {months} month(s)**\n"
+        f"💵 **Total: {price} Birr**\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🇺🇸 *Please send exactly **{price} Birr** to the following Telebirr account:*\n"
+        f"`{TELEBIRR_ACCOUNT}`\n\n"
+        "📸 *After payment, send a screenshot of the transaction.*\n\n"
+        f"🇪🇹 *እባክዎ በትክክል **{price} ብር** ወደዚህ ቴሌብር አካውንት ይላኩ።*\n"
+        f"`{TELEBIRR_ACCOUNT}`\n\n"
+        "*ከክፍያ በኋላ የስክሪን ሾት ይላኩ።*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    )
+    await query.edit_message_text(text, parse_mode="Markdown")
+
+# -------------------- Premium Photo Handler --------------------
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     months = context.user_data.get('selected_months')
     if not months:
         await update.message.reply_text(
-            "🇺🇸 Please first choose a subscription plan using /start.\n"
-            "🇪🇹 እባክዎ መጀመሪያ የደንበኝነት ምርጫዎን ይምረጡ።",
+            "⚠️ Please first choose a subscription plan using /start.\n\n"
+            "👉 Tap the button below to begin.",
             reply_markup=proceed_keyboard()
         )
         return
+
     price = {1: PRICE_1, 2: PRICE_2, 3: PRICE_3}[months]
     photo = update.message.photo[-1]
     caption = (
-        f"💳 *New payment screenshot*\n"
-        f"From: [{user.first_name}](tg://user?id={user.id})\n"
-        f"User ID: `{user.id}`\n"
-        f"Username: @{user.username or 'N/A'}\n"
-        f"Plan: {months} month(s) – {price} Birr\n"
-        f"Telebirr account: `{TELEBIRR_ACCOUNT}`"
+        "╔════════════════════════╗\n"
+        "   💳 **NEW PAYMENT** 💳   \n"
+        "╚════════════════════════╝\n\n"
+        f"👤 *From:* [{user.first_name}](tg://user?id={user.id})\n"
+        f"🆔 *User ID:* `{user.id}`\n"
+        f"📛 *Username:* @{user.username or 'N/A'}\n"
+        f"📅 *Plan:* {months} month(s)\n"
+        f"💰 *Amount:* {price} Birr\n"
+        f"🏦 *Telebirr:* `{TELEBIRR_ACCOUNT}`\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "👇 *Approve or decline below* 👇"
     )
     keyboard = [
         [
@@ -202,6 +221,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
+
     for admin_id in ADMIN_IDS:
         try:
             await context.bot.send_photo(
@@ -213,21 +233,27 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         except Exception as e:
             print(f"Failed to send to admin {admin_id}: {e}")
+
     await update.message.reply_text(
-        "✅ Your screenshot has been sent. You'll be notified once approved.\n\n"
-        "✅ የስክሪን ሾትዎ ተልኳል። ሲፀድቅ ይነገርዎታል።"
+        "✅ **Your payment proof has been forwarded to our admins.**\n"
+        "⏳ You'll receive a notification once it's approved.\n\n"
+        "✅ **የክፍያ ማረጋገጫዎ ለአስተዳዳሪዎቻችን ተልኳል።**\n"
+        "⏳ ሲፀድቅ ይነገርዎታል።"
     )
     context.user_data.clear()
 
+# -------------------- Premium Callback Handler --------------------
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.from_user.id not in ADMIN_IDS:
         await query.edit_message_text("⛔ Unauthorized.")
         return
+
     data = query.data.split(":")
     action = data[0]
     user_id = int(data[1])
+
     if action == "approve":
         months = int(data[2])
         add_subscription(user_id, months * 30)
@@ -240,31 +266,42 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(
                 chat_id=user_id,
                 text=(
-                    f"🎉 *Your payment has been approved! / ክፍያዎ ጸድቋል!*\n\n"
-                    f"🇺🇸 You have been granted access for {months} month(s).\n"
-                    f"Here is your invite link:\n{invite_link.invite_link}\n\n"
-                    f"🇪🇹 የ{months} ወር መዳረሻ ተሰጥቶዎታል።\n"
-                    f"የመግቢያ ሊንክዎ ይህ ነው።"
+                    "╔══════════════════════════════════╗\n"
+                    "   🎉 **PAYMENT APPROVED!** 🎉   \n"
+                    "╚══════════════════════════════════╝\n\n"
+                    f"✨ **You have been granted access for {months} month(s).** ✨\n\n"
+                    f"🔗 **Your exclusive invite link:**\n{invite_link.invite_link}\n\n"
+                    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    "⚠️ *This link expires in {months} months and can only be used once.*\n\n"
+                    "🇪🇹 ክፍያዎ ጸድቋል! የመግቢያ ሊንክዎ ከላይ አለ።\n"
+                    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                 ),
                 parse_mode="Markdown"
             )
-            await query.edit_message_text(f"✅ Approved user `{user_id}` for {months} months.\n\nInvite link sent.", parse_mode="Markdown")
+            await query.edit_message_text(
+                text=f"✅ **Approved user `{user_id}` for {months} months.**\n\n📨 Invite link sent.",
+                parse_mode="Markdown"
+            )
         except Exception as e:
             await query.edit_message_text(f"❌ Approval failed: {e}")
     elif action == "decline":
-        await query.edit_message_text(f"❌ Declined user `{user_id}`.", parse_mode="Markdown")
+        await query.edit_message_text(f"❌ **Declined user `{user_id}`.**", parse_mode="Markdown")
 
+# -------------------- Other Handlers (Help, Status, Renew, Approve, List) --------------------
+# (These remain largely the same but with enhanced formatting)
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (
-        "🤖 *Available Commands*\n\n"
-        "👤 *For everyone:*\n"
-        "/start – Start the bot and see membership options\n"
-        "/help – Show this message\n"
-        "/status – Check your subscription status\n"
-        "/renew – Request renewal (if expired)\n\n"
-        "👑 *For admins only:*\n"
-        "/approve <user_id> [months] – Manually approve (default 1 month)\n"
-        "/list – List all active subscribers"
+        "🤖 **VVIP Habesha Bot Commands**\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "👤 **For everyone:**\n"
+        "/start – 🚀 Begin your premium journey\n"
+        "/help – ℹ️ Show this help\n"
+        "/status – 📊 Check your subscription status\n"
+        "/renew – 🔄 Request renewal\n\n"
+        "👑 **For admins only:**\n"
+        "/approve `<user_id>` [months] – ✅ Manually approve (default 1 month)\n"
+        "/list – 📋 List all active subscribers\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━"
     )
     await update.message.reply_text(help_text, parse_mode="Markdown")
 
@@ -276,14 +313,27 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         days = remaining // 86400
         hours = (remaining % 86400) // 3600
         status_text = (
-            f"✅ *You are subscribed!*\n"
-            f"Expires: {format_expiry(expiry)}\n"
-            f"Time left: {days} days, {hours} hours"
+            "✅ **You are an active VIP member!**\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📅 **Expires:** {format_expiry(expiry)}\n"
+            f"⏳ **Time left:** {days} days, {hours} hours\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━"
         )
     elif expiry:
-        status_text = "❌ *Your subscription has expired.* Use /renew to request renewal."
+        status_text = (
+            "❌ **Your membership has expired.**\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📅 **Expired on:** {format_expiry(expiry)}\n"
+            "Use /renew to request a renewal.\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━"
+        )
     else:
-        status_text = "❌ *You are not subscribed.* Send /start to choose a plan."
+        status_text = (
+            "❌ **You are not subscribed.**\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "Send /start to choose a plan and join the VIP experience!\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━"
+        )
     await update.message.reply_text(status_text, parse_mode="Markdown")
 
 async def renew_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -292,14 +342,21 @@ async def renew_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await context.bot.send_message(
                 chat_id=admin_id,
-                text=f"🔄 *Renewal request* from [{user.first_name}](tg://user?id={user.id}) (ID: `{user.id}`)",
+                text=(
+                    "🔄 **Renewal Request**\n"
+                    "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"👤 *From:* [{user.first_name}](tg://user?id={user.id})\n"
+                    f"🆔 *User ID:* `{user.id}`\n"
+                    f"📛 *Username:* @{user.username or 'N/A'}\n"
+                    "━━━━━━━━━━━━━━━━━━━━━━━━━"
+                ),
                 parse_mode="Markdown"
             )
         except Exception as e:
             print(f"Failed to notify admin {admin_id}: {e}")
     await update.message.reply_text(
-        "📩 Your renewal request has been sent to the admins.\n\n"
-        "📩 የእድሳት ጥያቄዎ ለአስተዳዳሪዎች ተልኳል።"
+        "📩 **Your renewal request has been sent to the admins.**\n\n"
+        "📩 **የእድሳት ጥያቄዎ ለአስተዳዳሪዎች ተልኳል።**"
     )
 
 async def approve_manual(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -315,6 +372,7 @@ async def approve_manual(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except ValueError:
         await update.message.reply_text("Invalid arguments.")
         return
+
     add_subscription(user_id, months * 30)
     try:
         invite_link = await context.bot.create_chat_invite_link(
@@ -324,9 +382,17 @@ async def approve_manual(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await context.bot.send_message(
             chat_id=user_id,
-            text=f"🎉 An admin has manually approved your subscription for {months} months!\n\nYour invite link:\n{invite_link.invite_link}"
+            text=(
+                "╔══════════════════════════════════╗\n"
+                "   🎉 **MANUAL APPROVAL** 🎉   \n"
+                "╚══════════════════════════════════╝\n\n"
+                f"✨ **An admin has granted you access for {months} month(s).** ✨\n\n"
+                f"🔗 **Your exclusive invite link:**\n{invite_link.invite_link}\n\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            ),
+            parse_mode="Markdown"
         )
-        await update.message.reply_text(f"✅ Approved user {user_id} for {months} months.")
+        await update.message.reply_text(f"✅ **Approved user `{user_id}` for {months} months.**", parse_mode="Markdown")
     except Exception as e:
         await update.message.reply_text(f"❌ Approval failed: {e}")
 
@@ -342,13 +408,38 @@ async def list_subscribers(update: Update, context: ContextTypes.DEFAULT_TYPE):
         rows = c.fetchall()
         conn.close()
     if not rows:
-        await update.message.reply_text("No active subscribers.")
+        await update.message.reply_text("📭 **No active subscribers.**", parse_mode="Markdown")
         return
-    lines = ["📋 *Active Subscribers:*\n"]
+    lines = ["📋 **Active Subscribers:**\n━━━━━━━━━━━━━━━━━━━━━━━━━"]
     for uid, exp in rows:
         status = "✅" if exp > now else "❌"
         lines.append(f"{status} `{uid}` – expires {format_expiry(exp)}")
+    lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━")
     await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+
+def auto_cleanup():
+    while True:
+        time.sleep(86400)
+        now = int(time.time())
+        expired = get_expired_users(now)
+        if expired:
+            print(f"🧹 Cleaning up {len(expired)} expired users...")
+            for user_id in expired:
+                try:
+                    asyncio.run(application.bot.ban_chat_member(
+                        chat_id=PRIVATE_CHANNEL_ID,
+                        user_id=user_id
+                    ))
+                    remove_subscription(user_id)
+                    asyncio.run(application.bot.send_message(
+                        chat_id=user_id,
+                        text="❌ Your subscription has expired. To renew, please send a new payment screenshot."
+                    ))
+                    print(f"✅ Removed expired user {user_id}")
+                except Exception as e:
+                    print(f"❌ Error cleaning up user {user_id}: {e}")
+        else:
+            print("🧹 No expired users found.")
 
 # -------------------- Add Handlers to Application --------------------
 application.add_handler(CommandHandler("start", start))
@@ -362,7 +453,7 @@ application.add_handler(CallbackQueryHandler(plan_callback, pattern="^plan:"))
 application.add_handler(CallbackQueryHandler(handle_callback, pattern="^(approve|decline):"))
 application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-# -------------------- Initialize (no polling!) --------------------
+# -------------------- Initialize Application --------------------
 async def init_app():
     await application.initialize()
 asyncio.run(init_app())
@@ -379,7 +470,6 @@ def webhook():
     try:
         data = request.get_json(force=True)
         update = Update.de_json(data, application.bot)
-        # Process the update in a new event loop to avoid conflicts
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(application.process_update(update))
