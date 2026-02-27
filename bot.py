@@ -420,7 +420,15 @@ def webhook():
 def set_webhook():
     """Register the webhook URL with Telegram using a temporary bot."""
     try:
-        base_url = request.host_url.rstrip('/')
+        # Use Render's public URL if available, otherwise build from request and force HTTPS
+        public_url = os.environ.get('RENDER_EXTERNAL_URL')
+        if public_url:
+            base_url = public_url.rstrip('/')
+        else:
+            # Build from request host and ensure HTTPS
+            base_url = request.host_url.rstrip('/')
+            if base_url.startswith('http://'):
+                base_url = base_url.replace('http://', 'https://', 1)
         webhook_url = f"{base_url}/webhook"
 
         # Create a temporary bot with its own connection pool
