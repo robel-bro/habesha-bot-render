@@ -27,7 +27,7 @@ if PRIVATE_CHANNEL_ID and PRIVATE_CHANNEL_ID.lstrip("-").isdigit():
 ADMIN_IDS = []
 _admins = os.getenv("ADMIN_IDS", "")
 if _admins:
-    for x in _admins.split(",""):
+    for x in _admins.split(","):
         x = x.strip()
         if x and x.isdigit():
             ADMIN_IDS.append(int(x))
@@ -94,7 +94,6 @@ init_db()
 app = Flask(__name__)
 
 # -------------------- Bot Setup --------------------
-# Build the application WITHOUT any updater (no polling)
 application = Application.builder().token(BOT_TOKEN).build()
 
 TELEBIRR_ACCOUNT = "0987973732"
