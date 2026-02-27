@@ -418,13 +418,15 @@ def webhook():
 
 @app.route("/set_webhook")
 def set_webhook():
-    """Register the webhook URL with Telegram."""
-    import os
-    # Render provides the external URL via RENDER_EXTERNAL_URL environment variable
-    render_url = os.environ.get('RENDER_EXTERNAL_URL', 'your-app.onrender.com')
-    webhook_url = f"https://{render_url}/webhook"
-    asyncio.run(application.bot.set_webhook(url=webhook_url))
-    return f"Webhook set to {webhook_url}"
+    """Register the webhook URL with Telegram using the request's host."""
+    try:
+        # Build the webhook URL from the request's host (the public URL)
+        base_url = request.host_url.rstrip('/')  # e.g., https://habesha-bot-render.onrender.com
+        webhook_url = f"{base_url}/webhook"
+        asyncio.run(application.bot.set_webhook(url=webhook_url))
+        return f"✅ Webhook set to {webhook_url}"
+    except Exception as e:
+        return f"❌ Error setting webhook: {e}", 500
 
 # -------------------- Run Flask --------------------
 if __name__ == "__main__":
